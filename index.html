@@ -1,391 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Interval Timer</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #f5f4f0;
-    display: flex;
-    min-height: 100vh;
-    color: #1a1a1a;
-    overflow: hidden;
-  }
-
-  .panel {
-    position: fixed;
-    top: 0; left: 0;
-    width: 280px;
-    height: 100vh;
-    background: #fff;
-    border-right: 1px solid #e8e8e8;
-    padding: 2rem 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
-    z-index: 100;
-  }
-
-  .panel.open { transform: translateX(0); }
-
-  .panel h2 {
-    font-size: 13px;
-    font-weight: 600;
-    color: #888;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-  }
-
-  .panel-field { display: flex; flex-direction: column; gap: 6px; }
-
-  .panel-field label { font-size: 14px; font-weight: 500; color: #333; }
-
-  .panel-field .input-row { display: flex; align-items: center; gap: 10px; }
-
-  .panel-field input[type="number"] {
-    width: 72px;
-    padding: 8px 10px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 15px;
-    font-family: inherit;
-    color: #1a1a1a;
-    background: #fafafa;
-    text-align: center;
-    -moz-appearance: textfield;
-  }
-
-  .panel-field input[type="number"]::-webkit-inner-spin-button,
-  .panel-field input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
-
-  .panel-field input[type="number"]:focus { outline: none; border-color: #aaa; background: #fff; }
-
-  .panel-field .unit { font-size: 13px; color: #999; }
-
-  .panel-divider { border: none; border-top: 1px solid #eee; }
-
-  .apply-btn {
-    padding: 10px;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    border: none;
-    background: #1a1a1a;
-    color: #fff;
-    font-family: inherit;
-    transition: background 0.15s;
-    width: 100%;
-  }
-  .apply-btn:hover { background: #333; }
-
-  .panel-note { font-size: 12px; color: #bbb; line-height: 1.6; }
-
-  .settings-btn {
-    position: fixed;
-    top: 50%;
-    left: 0;
-    transform: translateY(-50%);
-    width: 36px;
-    height: 64px;
-    background: #fff;
-    border: 1px solid #e0e0e0;
-    border-left: none;
-    border-radius: 0 10px 10px 0;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 200;
-    transition: background 0.15s, left 0.3s ease;
-    padding: 0;
-  }
-
-  .settings-btn:hover { background: #f5f4f0; }
-  .settings-btn.shifted { left: 280px; }
-  .settings-btn svg { width: 18px; height: 18px; color: #888; }
-
-  .overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.15);
-    z-index: 50;
-  }
-  .overlay.visible { display: block; }
-
-  .card {
-    background: #ffffff;
-    width: 100%;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1.5rem;
-    padding: 3rem 2rem;
-  }
-
-  .phase-badges { display: flex; gap: 8px; }
-
-  .badge {
-    padding: 5px 16px;
-    border-radius: 99px;
-    font-size: 13px;
-    font-weight: 500;
-    border: 1px solid #e0e0e0;
-    color: #999;
-    background: #fafafa;
-    transition: all 0.4s;
-  }
-
-  .badge.active-work  { background: #e8f0fe; color: #1a56c4; border-color: #a8c3fa; }
-  .badge.active-break { background: #e6f4ea; color: #1e6e34; border-color: #a8d5b5; }
-
-  .clock-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
-
-  svg.ring { transform: rotate(-90deg); }
-
-  .time-display { position: absolute; text-align: center; }
-
-  .time-number {
-    font-size: 56px;
-    font-weight: 300;
-    letter-spacing: -3px;
-    font-variant-numeric: tabular-nums;
-    color: #1a1a1a;
-  }
-
-  .time-label { font-size: 13px; color: #999; margin-top: 4px; }
-
-  .controls { display: flex; gap: 10px; }
-
-  button.ctrl {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 22px;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    border: 1px solid #ddd;
-    background: #fff;
-    color: #333;
-    font-family: inherit;
-    transition: background 0.15s, transform 0.1s;
-  }
-
-  button.ctrl:hover { background: #f5f4f0; }
-  button.ctrl:active { transform: scale(0.97); }
-
-  button.ctrl.primary {
-    background: #1a1a1a;
-    color: #fff;
-    border-color: #1a1a1a;
-    min-width: 120px;
-    justify-content: center;
-  }
-  button.ctrl.primary:hover { background: #333; }
-
-  .icon { width: 16px; height: 16px; vertical-align: middle; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interval Timer</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="overlay" id="overlay" onclick="closePanel()"></div>
+  <div class="overlay" id="overlay" onclick="closePanel()"></div>
 
-<div class="panel" id="panel">
-  <h2>Settings</h2>
-
-  <div class="panel-field">
-    <label>Sit duration</label>
-    <div class="input-row">
-      <input type="number" id="sit-mins" min="1" max="120" value="30">
-      <span class="unit">minutes</span>
-    </div>
+  <div class="panel" id="panel">
+    <h2>Intervals</h2>
+    <div id="interval-list"></div>
+    <button class="add-btn" onclick="addInterval()">+ Add interval</button>
+    <hr class="panel-divider">
+    <button class="apply-btn" onclick="applySettings()">Apply &amp; reset</button>
+    <p class="panel-note">Changes reset the timer to the start of the first interval.</p>
   </div>
 
-  <div class="panel-field">
-    <label>Stand duration</label>
-    <div class="input-row">
-      <input type="number" id="stand-mins" min="1" max="120" value="10">
-      <span class="unit">minutes</span>
-    </div>
-  </div>
-
-  <hr class="panel-divider">
-
-  <button class="apply-btn" onclick="applySettings()">Apply &amp; reset</button>
-
-  <p class="panel-note">Changes reset the timer to the beginning of the sit phase.</p>
-</div>
-
-<button class="settings-btn" id="settings-btn" onclick="togglePanel()" aria-label="Settings">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="3"/>
-    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-  </svg>
-</button>
-
-<div class="card">
-  <div class="phase-badges">
-    <span class="badge active-work" id="badge-work">&#9679; Sit (30 min)</span>
-    <span class="badge" id="badge-break">&#9679; Stand (10 min)</span>
-  </div>
-
-  <div class="clock-wrap">
-    <svg class="ring" width="220" height="220">
-      <circle cx="110" cy="110" r="98" fill="none" stroke="#eeeeee" stroke-width="10"/>
-      <circle id="progress" cx="110" cy="110" r="98" fill="none"
-        stroke="#1a56c4" stroke-width="10"
-        stroke-dasharray="615.75" stroke-dashoffset="0"
-        stroke-linecap="round"
-        style="transition: stroke-dashoffset 0.6s linear, stroke 0.5s;"/>
+  <button class="settings-btn" id="settings-btn" onclick="togglePanel()" aria-label="Settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
     </svg>
-    <div class="time-display">
-      <div class="time-number" id="time-display">30:00</div>
-      <div class="time-label" id="phase-label">Sit</div>
+  </button>
+
+  <div class="card">
+    <div class="carousel-wrap">
+      <div class="carousel-track" id="carousel-track"></div>
+    </div>
+    <div class="clock-wrap">
+      <svg class="ring" width="220" height="220">
+        <circle cx="110" cy="110" r="98" fill="none" stroke="#eeeeee" stroke-width="10"/>
+        <circle id="progress" cx="110" cy="110" r="98" fill="none"
+          stroke="#1a56c4" stroke-width="10"
+          stroke-dasharray="615.75" stroke-dashoffset="0"
+          stroke-linecap="round"
+          style="transition: stroke-dashoffset 0.6s linear, stroke 0.5s;"/>
+      </svg>
+      <div class="time-display">
+        <div class="time-number" id="time-display">--:--</div>
+        <div class="time-label" id="phase-label"></div>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="ctrl primary" id="start-btn" onclick="toggleTimer()">
+        <svg class="icon" id="btn-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        <span id="btn-label">Start</span>
+      </button>
+      <button class="ctrl" onclick="resetTimer()">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>
+        Reset
+      </button>
+      <button class="ctrl" onclick="skipPhase()">
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zm2-8.14L11.03 12 8 14.14V9.86zM16 6h2v12h-2z"/></svg>
+        Skip
+      </button>
     </div>
   </div>
 
-  <div class="controls">
-    <button class="ctrl primary" id="start-btn" onclick="toggleTimer()">
-      <svg class="icon" id="btn-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-      <span id="btn-label">Start</span>
-    </button>
-    <button class="ctrl" onclick="resetTimer()">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>
-      Reset
-    </button>
-    <button class="ctrl" onclick="skipPhase()">
-      <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zm2-8.14L11.03 12 8 14.14V9.86zM16 6h2v12h-2z"/></svg>
-      Skip
-    </button>
-  </div>
-</div>
-
-<script>
-const PHASES = [
-  { name: 'Sit',   badge: 'badge-work',  stroke: '#1a56c4', chimeFreqs: [783,659,523], activeClass: 'active-work',  key: 'sit'   },
-  { name: 'Stand', badge: 'badge-break', stroke: '#1e6e34', chimeFreqs: [523,659,783], activeClass: 'active-break', key: 'stand' }
-];
-
-let durations  = { sit: 30 * 60, stand: 10 * 60 };
-const CIRC     = 2 * Math.PI * 98;
-let phaseIndex = 0;
-let remaining  = durations.sit;
-let running    = false;
-let ticker     = null;
-
-const timeEl   = document.getElementById('time-display');
-const labelEl  = document.getElementById('phase-label');
-const circle   = document.getElementById('progress');
-const btnLabel = document.getElementById('btn-label');
-const btnIcon  = document.getElementById('btn-icon');
-
-const PLAY_ICON  = `<path d="M8 5v14l11-7z"/>`;
-const PAUSE_ICON = `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`;
-
-function fmt(s) {
-  return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
-}
-
-function updateBadges() {
-  document.getElementById('badge-work').innerHTML  = `&#9679; Sit (${Math.round(durations.sit/60)} min)`;
-  document.getElementById('badge-break').innerHTML = `&#9679; Stand (${Math.round(durations.stand/60)} min)`;
-}
-
-function updateUI() {
-  const phase = PHASES[phaseIndex];
-  const frac  = remaining / durations[phase.key];
-  timeEl.textContent  = fmt(remaining);
-  labelEl.textContent = phase.name;
-  circle.style.strokeDashoffset = CIRC * (1 - frac);
-  circle.style.stroke = phase.stroke;
-  document.querySelectorAll('.badge').forEach(b => b.className = 'badge');
-  document.getElementById(phase.badge).classList.add(phase.activeClass);
-}
-
-function playChime(freqs) {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    freqs.forEach((freq, i) => {
-      const osc = ctx.createOscillator(), gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.type = 'sine'; osc.frequency.value = freq;
-      const t = ctx.currentTime + i * 0.22;
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.35, t + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
-      osc.start(t); osc.stop(t + 0.6);
-    });
-  } catch(e) {}
-}
-
-function nextPhase() {
-  phaseIndex = (phaseIndex + 1) % PHASES.length;
-  remaining  = durations[PHASES[phaseIndex].key];
-  playChime(PHASES[phaseIndex].chimeFreqs);
-  updateUI();
-}
-
-function toggleTimer() {
-  if (running) {
-    clearInterval(ticker); running = false;
-    btnLabel.textContent = 'Resume'; btnIcon.innerHTML = PLAY_ICON;
-  } else {
-    running = true; btnLabel.textContent = 'Pause'; btnIcon.innerHTML = PAUSE_ICON;
-    ticker = setInterval(() => { remaining--; if (remaining <= 0) nextPhase(); else updateUI(); }, 1000);
-  }
-}
-
-function resetTimer() {
-  clearInterval(ticker); running = false;
-  phaseIndex = 0; remaining = durations.sit;
-  btnLabel.textContent = 'Start'; btnIcon.innerHTML = PLAY_ICON;
-  updateUI();
-}
-
-function skipPhase() {
-  remaining = 0; nextPhase();
-  if (running) {
-    clearInterval(ticker);
-    ticker = setInterval(() => { remaining--; if (remaining <= 0) nextPhase(); else updateUI(); }, 1000);
-  }
-}
-
-function togglePanel() {
-  const open = document.getElementById('panel').classList.toggle('open');
-  document.getElementById('settings-btn').classList.toggle('shifted', open);
-  document.getElementById('overlay').classList.toggle('visible', open);
-}
-
-function closePanel() {
-  document.getElementById('panel').classList.remove('open');
-  document.getElementById('settings-btn').classList.remove('shifted');
-  document.getElementById('overlay').classList.remove('visible');
-}
-
-function applySettings() {
-  const s = parseInt(document.getElementById('sit-mins').value, 10);
-  const t = parseInt(document.getElementById('stand-mins').value, 10);
-  if (!s || !t || s < 1 || t < 1) return;
-  durations.sit   = s * 60;
-  durations.stand = t * 60;
-  updateBadges();
-  resetTimer();
-  closePanel();
-}
-
-updateBadges();
-updateUI();
-</script>
+  <script src="script.js"></script>
 </body>
 </html>
